@@ -1,0 +1,6 @@
+.DS_Store
+*.log
+*.json
+!package.json
+.vscode/
+.idea/
