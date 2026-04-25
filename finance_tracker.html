@@ -6,20 +6,57 @@
 <title>Finance Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
+  /* Dark (forest) — default */
   :root {
-    --bg: #0f1419;
-    --panel: #1a2029;
-    --panel-2: #232b37;
-    --border: #2d3748;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --accent: #3b82f6;
-    --accent-2: #60a5fa;
-    --green: #10b981;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --purple: #8b5cf6;
-    --pink: #ec4899;
+    --bg: #0e1611;
+    --panel: #172620;
+    --panel-2: #1f3028;
+    --border: #2a3d33;
+    --text: #e6ece4;
+    --muted: #bcd0c0;
+    --accent: #7fa37a;           /* sage green */
+    --accent-2: #a4c29d;          /* lighter sage */
+    --green: #68b684;             /* success / income */
+    --red: #d66d6d;               /* danger / expense */
+    --yellow: #d4a84a;            /* warning */
+    --purple: #a090c4;
+    --pink: #c48aab;
+    --chart-income: #68b684;
+    --chart-expense: #d66d6d;
+    --chart-net: #a4c29d;
+    --chart-income-bg: rgba(104, 182, 132, 0.15);
+    --chart-expense-bg: rgba(214, 109, 109, 0.15);
+    --chart-accent-bg: rgba(164, 194, 157, 0.15);
+    --badge-income-bg: rgba(104, 182, 132, 0.18);
+    --badge-expense-bg: rgba(214, 109, 109, 0.18);
+    --badge-warn-bg: rgba(212, 168, 74, 0.18);
+    --hover-bg: rgba(255,255,255,0.03);
+  }
+  /* Light (sage) */
+  html.light {
+    --bg: #f1f5ec;
+    --panel: #ffffff;
+    --panel-2: #e6ecdd;
+    --border: #c9d4bb;
+    --text: #1f2a20;
+    --muted: #2e4933;
+    --accent: #4a7c4e;            /* forest green */
+    --accent-2: #3c6840;
+    --green: #2f7a4b;
+    --red: #b14444;
+    --yellow: #a67c20;
+    --purple: #7a68a0;
+    --pink: #a26088;
+    --chart-income: #3c7a58;
+    --chart-expense: #b14444;
+    --chart-net: #4a7c4e;
+    --chart-income-bg: rgba(60, 122, 88, 0.18);
+    --chart-expense-bg: rgba(177, 68, 68, 0.18);
+    --chart-accent-bg: rgba(74, 124, 78, 0.15);
+    --badge-income-bg: rgba(60, 122, 88, 0.15);
+    --badge-expense-bg: rgba(177, 68, 68, 0.15);
+    --badge-warn-bg: rgba(166, 124, 32, 0.15);
+    --hover-bg: rgba(0,0,0,0.03);
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; background:var(--bg); color:var(--text);
@@ -85,7 +122,7 @@
   table { width: 100%; border-collapse: collapse; }
   th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
   th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr:hover td { background: var(--hover-bg); }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   td .tag {
     display: inline-block; padding: 2px 8px; border-radius: 10px;
@@ -139,11 +176,11 @@
 
   .color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
   .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 500; }
-  .badge.income { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-  .badge.expense { background: rgba(239, 68, 68, 0.15); color: var(--red); }
-  .badge.overdue { background: rgba(239, 68, 68, 0.15); color: var(--red); }
-  .badge.upcoming { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
-  .badge.ok { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+  .badge.income { background: var(--badge-income-bg); color: var(--green); }
+  .badge.expense { background: var(--badge-expense-bg); color: var(--red); }
+  .badge.overdue { background: var(--badge-expense-bg); color: var(--red); }
+  .badge.upcoming { background: var(--badge-warn-bg); color: var(--yellow); }
+  .badge.ok { background: var(--badge-income-bg); color: var(--green); }
 
   .chart-wrap { position: relative; height: 280px; }
   .empty {
@@ -167,6 +204,7 @@
     <button data-view="analytics">Analytics</button>
   </nav>
   <div class="actions">
+    <button id="btn-theme" title="Toggle light/dark mode" aria-label="Toggle theme">🌙</button>
     <button id="btn-export">Export</button>
     <button id="btn-import">Import</button>
     <input type="file" id="file-import" accept="application/json" hidden />
@@ -210,6 +248,7 @@
     </div>
     <div class="card" style="margin-top:14px;">
       <div class="filter-bar">
+        <input type="text" id="txn-filter-month" placeholder="Month (e.g. april, 4)" />
         <input type="search" id="txn-search" placeholder="Search description&hellip;" />
         <select id="txn-filter-type">
           <option value="">All types</option>
@@ -218,7 +257,6 @@
         </select>
         <select id="txn-filter-category"><option value="">All categories</option></select>
         <select id="txn-filter-account"><option value="">All accounts</option></select>
-        <input type="month" id="txn-filter-month" />
         <button class="btn secondary small" id="btn-clear-filters">Clear</button>
       </div>
       <div id="txn-table-wrap"></div>
@@ -296,6 +334,37 @@
 
 <script>
 // ======================================================================
+// THEME
+// ======================================================================
+const THEME_KEY = 'financeTracker.theme';
+function applyTheme(mode) {
+  document.documentElement.classList.toggle('light', mode === 'light');
+  const btn = document.getElementById('btn-theme');
+  if (btn) btn.textContent = mode === 'light' ? '☀️' : '🌙';
+}
+function currentTheme() {
+  return document.documentElement.classList.contains('light') ? 'light' : 'dark';
+}
+function initTheme() {
+  let saved = localStorage.getItem(THEME_KEY);
+  if (!saved) {
+    saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  applyTheme(saved);
+}
+function toggleTheme() {
+  const next = currentTheme() === 'light' ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+  render();  // rebuild charts with new colors
+}
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+    || getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+initTheme();
+
+// ======================================================================
 // STATE
 // ======================================================================
 const LS_KEY = 'financeTracker.v1';
@@ -356,6 +425,25 @@ const fmt = n => {
 const cat = id => state.categories.find(c => c.id === id);
 const acct = id => state.accounts.find(a => a.id === id);
 const inMonth = (dateStr, mk) => dateStr.slice(0,7) === mk;
+
+const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+// Fuzzy match a transaction date against user input like "april", "apr", "4", "04", or "2026-04".
+function matchMonth(dateStr, query) {
+  const q = (query || '').trim().toLowerCase();
+  if (!q) return true;
+  // YYYY-MM exact
+  if (/^\d{4}-\d{2}$/.test(q)) return dateStr.slice(0,7) === q;
+  const monthNum = parseInt(dateStr.slice(5,7), 10);   // 1..12
+  // Numeric: "4", "04", "12"
+  if (/^\d{1,2}$/.test(q)) {
+    const n = parseInt(q, 10);
+    return n >= 1 && n <= 12 && monthNum === n;
+  }
+  // Name or prefix: "apr", "april"
+  const idx = MONTH_NAMES.findIndex(n => n.startsWith(q));
+  if (idx >= 0) return monthNum === idx + 1;
+  return false;
+}
 
 function monthsBack(n) {
   const result = [];
@@ -440,6 +528,11 @@ function closeModal() { modalBackdrop.classList.remove('open'); modalBody.innerH
 modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
 
 // ======================================================================
+// THEME BUTTON
+// ======================================================================
+document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+
+// ======================================================================
 // IMPORT / EXPORT
 // ======================================================================
 document.getElementById('btn-export').addEventListener('click', () => {
@@ -467,16 +560,8 @@ document.getElementById('file-import').addEventListener('change', async e => {
 // ======================================================================
 // TRANSACTIONS
 // ======================================================================
-function applyTxnToBalance(txn, sign) {
-  const a = acct(txn.accountId); if (!a) return;
-  const amt = Number(txn.amount) * sign;
-  if (a.type === 'credit') {
-    a.balance = Number(a.balance) + (txn.type === 'expense' ? amt : -amt);
-  } else {
-    a.balance = Number(a.balance) + (txn.type === 'income' ? amt : -amt);
-  }
-  a.balance = Math.round(a.balance * 100) / 100;
-}
+// Note: transactions do NOT modify account balances. Account balances are
+// managed manually by the user via the Accounts view.
 
 function addOrEditTxn(existing) {
   const cats = state.categories;
@@ -523,20 +608,17 @@ function addOrEditTxn(existing) {
       if (!confirm(`Category "${c.name}" is ${c.type} but this is an ${data.type} transaction. Save anyway?`)) return false;
     }
     if (existing) {
-      applyTxnToBalance(existing, -1);
       Object.assign(existing, data);
     } else {
       data.id = uid();
       state.transactions.push(data);
     }
-    applyTxnToBalance(existing || data, +1);
     save();
     render();
   });
   if (existing) {
     document.getElementById('delete-btn').addEventListener('click', () => {
       if (!confirm('Delete this transaction?')) return;
-      applyTxnToBalance(existing, -1);
       state.transactions = state.transactions.filter(x => x.id !== existing.id);
       save(); closeModal(); render();
     });
@@ -671,7 +753,6 @@ function payBill(bill) {
     accountId: bill.accountId, description: `Bill: ${bill.name}`
   };
   state.transactions.push(txn);
-  applyTxnToBalance(txn, +1);
   bill.nextDue = advanceDate(bill.nextDue, bill.frequency);
   save(); render();
 }
@@ -691,7 +772,7 @@ function addOrEditAccount(existing) {
             `<option value="${t}" ${t===a.type?'selected':''}>${t[0].toUpperCase()+t.slice(1)}</option>`).join('')}
         </select>
       </div>
-      <div class="field"><label>Current Balance ${existing ? '(overrides any drift)' : ''}</label><input type="number" name="balance" step="0.01" value="${a.balance}"/></div>
+      <div class="field"><label>Current Balance</label><input type="number" name="balance" step="0.01" value="${a.balance}"/></div>
       <div class="buttons">
         ${existing ? `<button type="button" class="btn danger" id="acct-del">Delete</button>` : ''}
         <div class="spacer"></div>
@@ -781,8 +862,8 @@ function renderDashboard() {
   if (pieData.length) {
     charts.pie = new Chart(document.getElementById('chart-pie'), {
       type: 'doughnut',
-      data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors, borderColor: '#1a2029', borderWidth: 2 }] },
-      options: { plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } } }
+      data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors, borderColor: cssVar('--panel'), borderWidth: 2 }] },
+      options: { plugins: { legend: { position: 'right', labels: { color: cssVar('--text') } } } }
     });
   } else {
     document.getElementById('chart-pie').parentElement.innerHTML = '<div class="empty">No expenses yet this month.</div>';
@@ -799,13 +880,13 @@ function renderDashboard() {
     data: {
       labels: months,
       datasets: [
-        { label: 'Income', data: incArr, backgroundColor: '#10b981' },
-        { label: 'Expense', data: expArr, backgroundColor: '#ef4444' },
+        { label: 'Income', data: incArr, backgroundColor: cssVar('--chart-income') },
+        { label: 'Expense', data: expArr, backgroundColor: cssVar('--chart-expense') },
       ]
     },
-    options: { plugins: { legend: { labels: { color: '#e2e8f0' } } },
-      scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } } } }
+    options: { plugins: { legend: { labels: { color: cssVar('--text') } } },
+      scales: { x: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } },
+                y: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } } } }
   });
 
   const bills = state.bills.map(b => ({...b, nextDue: nextDueDate(b)}))
@@ -848,7 +929,7 @@ function renderTransactions() {
   if (tFilter) rows = rows.filter(t => t.type === tFilter);
   if (cFilter) rows = rows.filter(t => t.categoryId === cFilter);
   if (aFilter) rows = rows.filter(t => t.accountId === aFilter);
-  if (mFilter) rows = rows.filter(t => t.date.slice(0,7) === mFilter);
+  if (mFilter) rows = rows.filter(t => matchMonth(t.date, mFilter));
 
   const total = rows.reduce((s,t) => s + (t.type==='income' ? +t.amount : -t.amount), 0);
 
@@ -883,7 +964,9 @@ function renderTransactions() {
   });
 }
 ['txn-search','txn-filter-type','txn-filter-category','txn-filter-account','txn-filter-month'].forEach(id => {
-  document.getElementById(id).addEventListener('input', renderTransactions);
+  const el = document.getElementById(id);
+  el.addEventListener('input', renderTransactions);
+  el.addEventListener('change', renderTransactions);
 });
 document.getElementById('btn-clear-filters').addEventListener('click', () => {
   ['txn-search','txn-filter-type','txn-filter-category','txn-filter-account','txn-filter-month'].forEach(id => {
@@ -1023,10 +1106,10 @@ function renderAccounts() {
       type: 'line',
       data: { labels: hist.map(p=>p.date),
         datasets: [{ label: 'Net Worth', data: hist.map(p=>p.value),
-          borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.15)', fill: true, tension: 0.2 }] },
-      options: { plugins: { legend: { labels: { color: '#e2e8f0' } } },
-        scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } },
-                  y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } } } }
+          borderColor: cssVar('--accent'), backgroundColor: cssVar('--chart-accent-bg'), fill: true, tension: 0.2 }] },
+      options: { plugins: { legend: { labels: { color: cssVar('--text') } } },
+        scales: { x: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } },
+                  y: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } } } }
     });
   } else {
     document.getElementById('chart-networth').parentElement.innerHTML = '<div class="empty">Net worth history shows up after 2+ snapshots (one per day).</div>';
@@ -1043,13 +1126,13 @@ function renderAnalytics() {
   charts.flow = new Chart(document.getElementById('chart-flow'), {
     type: 'line',
     data: { labels: months, datasets: [
-      { label: 'Income', data: inc, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.2 },
-      { label: 'Expenses', data: exp, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.2 },
-      { label: 'Net', data: net, borderColor: '#3b82f6', borderDash: [6,4], fill: false, tension: 0.2 },
+      { label: 'Income', data: inc, borderColor: cssVar('--chart-income'), backgroundColor: cssVar('--chart-income-bg'), fill: true, tension: 0.2 },
+      { label: 'Expenses', data: exp, borderColor: cssVar('--chart-expense'), backgroundColor: cssVar('--chart-expense-bg'), fill: true, tension: 0.2 },
+      { label: 'Net', data: net, borderColor: cssVar('--chart-net'), borderDash: [6,4], fill: false, tension: 0.2 },
     ]},
-    options: { plugins: { legend: { labels: { color: '#e2e8f0' } } },
-      scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } } } }
+    options: { plugins: { legend: { labels: { color: cssVar('--text') } } },
+      scales: { x: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } },
+                y: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } } } }
   });
 
   const m6 = monthsBack(6);
@@ -1065,9 +1148,9 @@ function renderAnalytics() {
   charts.catTrend = new Chart(document.getElementById('chart-cat-trend'), {
     type: 'line',
     data: { labels: m6, datasets },
-    options: { plugins: { legend: { labels: { color: '#e2e8f0', boxWidth: 12 } } },
-      scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } } } }
+    options: { plugins: { legend: { labels: { color: cssVar('--text'), boxWidth: 12 } } },
+      scales: { x: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } },
+                y: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } } } }
   });
 
   const yr = today().slice(0,4);
@@ -1098,11 +1181,11 @@ function renderAnalytics() {
     type: 'bar',
     data: { labels: m6, datasets: [{
       label: 'Savings Rate %', data: rates,
-      backgroundColor: rates.map(r => r >= 0 ? '#10b981' : '#ef4444'),
+      backgroundColor: rates.map(r => r >= 0 ? cssVar('--chart-income') : cssVar('--chart-expense')),
     }]},
-    options: { plugins: { legend: { labels: { color: '#e2e8f0' } } },
-      scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } },
-                y: { ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: '#2d3748' } } } }
+    options: { plugins: { legend: { labels: { color: cssVar('--text') } } },
+      scales: { x: { ticks: { color: cssVar('--muted') }, grid: { color: cssVar('--border') } },
+                y: { ticks: { color: cssVar('--muted'), callback: v => v + '%' }, grid: { color: cssVar('--border') } } } }
   });
 }
 
