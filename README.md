@@ -1,6 +1,6 @@
 # Personal Finance Tracker
 
-A single-file, client-side personal finance tracker. No backend, no accounts, no dependencies to install — just open [`finance_tracker.html`](./finance_tracker.html) in a browser. All data is stored locally in the browser's `localStorage`.
+A single-file, client-side personal finance tracker. No backend, no accounts, no dependencies to install — just open [`index.html`](./index.html) in a browser. All data is stored locally in the browser's `localStorage`.
 
 ## Features
 
@@ -22,7 +22,7 @@ A single-file, client-side personal finance tracker. No backend, no accounts, no
 ## Usage
 
 1. Download or clone the repo.
-2. Open `finance_tracker.html` in any modern browser (double-click the file).
+2. Open `index.html` in any modern browser (double-click the file).
 3. Start adding accounts, categories, transactions, and bills.
 
 Data lives under the `localStorage` key `financeTracker.v1` in whichever browser
